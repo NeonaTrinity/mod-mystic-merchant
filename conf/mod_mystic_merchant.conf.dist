@@ -1,0 +1,101 @@
+###############################################################################
+# MYSTIC MERCHANT
+###############################################################################
+
+# Enable the module.
+MysticMerchant.Enable = 1
+
+# Scripted NPC entry. This must match the entry created by the supplied SQL. The supplied SQL creates entry 900201.
+MysticMerchant.NpcEntry = 900201
+
+# Content cap:
+#   0 = Vanilla brackets through level 60
+#   1 = Burning Crusade brackets through level 70
+#   2 = Wrath brackets through level 80
+MysticMerchant.Expansion = 2
+
+###############################################################################
+# LOCKED CONTAINERS
+###############################################################################
+
+MysticMerchant.Chests.Enable = 1
+
+# 0 = Roll the selected container's original item_loot_template.
+# 1 = Consume the box and grant one random equipment item from a comparable
+#     level bracket. RequiredLevel is used first; ItemLevel is the fallback.
+MysticMerchant.Chests.Mode = 0
+
+MysticMerchant.Chests.AllowOpenOne = 1
+MysticMerchant.Chests.AllowOpenAllOfType = 1
+
+# Safety limit for one "open all" operation.
+MysticMerchant.Chests.OpenAllMaximum = 20
+
+# Native box loot may contain multiple stacks. Opening is refused unless the
+# player has at least this many empty general-purpose bag slots. The rolled
+# number of eligible item stacks can raise the required amount above this value.
+MysticMerchant.Chests.MinimumFreeSlots = 6
+
+###############################################################################
+# EQUIPMENT GAMBLING
+###############################################################################
+
+MysticMerchant.Gambling.Enable = 1
+
+# When enabled, players only see brackets whose minimum level they have reached.
+MysticMerchant.Gambling.RequirePlayerLevel = 1
+
+# Must total exactly 100. Invalid totals fall back to 80 / 18 / 2.
+MysticMerchant.Gambling.GreenChance = 80
+MysticMerchant.Gambling.BlueChance = 18
+MysticMerchant.Gambling.EpicChance = 2
+
+# Prices are gold values.
+MysticMerchant.Gambling.Price.10_19 = 2
+MysticMerchant.Gambling.Price.20_29 = 5
+MysticMerchant.Gambling.Price.30_39 = 10
+MysticMerchant.Gambling.Price.40_49 = 20
+MysticMerchant.Gambling.Price.50_59 = 30
+MysticMerchant.Gambling.Price.60 = 50
+MysticMerchant.Gambling.Price.61_69 = 75
+MysticMerchant.Gambling.Price.70 = 100
+MysticMerchant.Gambling.Price.71_79 = 150
+MysticMerchant.Gambling.Price.80 = 250
+
+###############################################################################
+# REWARD POOL
+###############################################################################
+
+# 1 = only equipment appearing in creature, gameobject, or reference loot.
+# 0 = all eligible item_template equipment.
+MysticMerchant.Pool.UseLootSourcesOnly = 1
+
+# Include equipment referenced by item_loot_template in the gambling pool.
+# This is off by default because nested containers can broaden the pool.
+MysticMerchant.Pool.IncludeItemLoot = 0
+
+MysticMerchant.Pool.AllowItemSets = 0
+MysticMerchant.Pool.AllowReputationItems = 0
+MysticMerchant.Pool.AllowQuestItems = 0
+MysticMerchant.Pool.AllowConjuredItems = 0
+
+# Maximum ItemLevel accepted in each required-level bracket. These defaults
+# favor leveling, world, and dungeon rewards while excluding higher raid tiers.
+# Loot tables do not perfectly identify raid provenance, so lower these values
+# further or curate the database if you want a strictly raid-free pool.
+MysticMerchant.Pool.MaxItemLevel.10_19 = 29
+MysticMerchant.Pool.MaxItemLevel.20_29 = 39
+MysticMerchant.Pool.MaxItemLevel.30_39 = 49
+MysticMerchant.Pool.MaxItemLevel.40_49 = 59
+MysticMerchant.Pool.MaxItemLevel.50_59 = 69
+MysticMerchant.Pool.MaxItemLevel.60 = 75
+MysticMerchant.Pool.MaxItemLevel.61_69 = 115
+MysticMerchant.Pool.MaxItemLevel.70 = 125
+MysticMerchant.Pool.MaxItemLevel.71_79 = 187
+MysticMerchant.Pool.MaxItemLevel.80 = 200
+
+###############################################################################
+# LOGGING
+###############################################################################
+
+MysticMerchant.Logging.Enable = 1
