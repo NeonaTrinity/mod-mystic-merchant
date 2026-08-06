@@ -111,16 +111,30 @@ The expansion setting hides later choices and blocks replacement-container rewar
 ## Gambling prices
 
 ```text
-Level 10-19       5 gold
-Level 20-29      10 gold
-Level 30-39      20 gold
-Level 40-49      40 gold
-Level 50-59      50 gold
-Level 60        100 gold
-Level 61-69     150 gold
-Level 70        250 gold
-Level 71-79     300 gold
-Level 80        500 gold
+Level 10-19      2 gold
+Level 20-29      5 gold
+Level 30-39      10 gold
+Level 40-49      20 gold
+Level 50-59      30 gold
+Level 60        50 gold
+Level 61-69     75 gold
+Level 70        100 gold
+Level 71-79     150 gold
+Level 80        250 gold
+
+can be modified with these config settings:
+
+MysticMerchant.Gambling.Price.10_19 = 2
+MysticMerchant.Gambling.Price.20_29 = 5
+MysticMerchant.Gambling.Price.30_39 = 10
+MysticMerchant.Gambling.Price.40_49 = 20
+MysticMerchant.Gambling.Price.50_59 = 30
+MysticMerchant.Gambling.Price.60 = 50
+MysticMerchant.Gambling.Price.61_69 = 75
+MysticMerchant.Gambling.Price.70 = 100
+MysticMerchant.Gambling.Price.71_79 = 150
+MysticMerchant.Gambling.Price.80 = 250
+
 ```
 
 All prices and quality odds are configurable. With `MysticMerchant.Gambling.RequirePlayerLevel = 1`, a player only sees brackets whose minimum level they have reached.
