@@ -69,7 +69,7 @@ From the AzerothCore project directory after placing this module under `modules/
 docker compose up -d --build
 ```
 
-Manual SQL import example for the common AzerothCore Docker service names:                                                                                                      
+Manual SQL import example for the common AzerothCore Docker service names:
 
 ```bash
 docker compose exec -T ac-database mysql -uroot -ppassword acore_world \
@@ -77,14 +77,6 @@ docker compose exec -T ac-database mysql -uroot -ppassword acore_world \
 ```
 
 Use the actual database password if it differs.
-
---------- 
-copy the .conf.dist file and rename the copy to .conf.
-
-From inside ~/wow-server-playerbots, run:
-
-cp modules/mod-mystic-merchant/conf/mod_mystic_merchant.conf.dist \
-   env/dist/etc/modules/mod_mystic_merchant.conf
 
 ## Main gossip menu
 
@@ -125,15 +117,21 @@ Level 80        500 gold
 
 All prices and quality odds are configurable. With `MysticMerchant.Gambling.RequirePlayerLevel = 1`, a player only sees brackets whose minimum level they have reached.
 
-The default quality roll is:
+The default quality weights are:
 
 ```text
-Uncommon (green): 80%
-Rare (blue):      18%
-Epic (purple):     2%
+Poor (gray):       0
+Common (white):    0
+Uncommon (green): 80
+Rare (blue):      18
+Epic (purple):     2
 ```
 
-When the rolled quality has no valid item for an otherwise valid selection, the module falls back to another available configured quality rather than taking gold and returning nothing.
+The five values are relative weights and do not need to total 100. For example, `10 / 10 / 80 / 18 / 2` rolls proportionally across a total weight of 120. If all five values are 0, the module falls back to the default `0 / 0 / 80 / 18 / 2` weights and gambling remains enabled.
+
+Gray and white rolls first try to award a real item matching the selected category, slot/type, and level bracket. If no matching gray item exists, the merchant awards a thematic gray consolation item: Broken U.L.O.S.E. Button (43330), Broken Boar Tusk (3171), or Broken Wand (3769). If no matching white item exists, the fallback is Armor Scraps (17422) or Ruined Leather Scraps (2934), with leather armor preferring Ruined Leather Scraps. Gray and white rewards never receive random affixes.
+
+For green, blue, and epic rolls, the module preserves the original behavior: if the exact rolled quality has no valid item for an otherwise valid selection, it falls back among the other normal equipment qualities rather than taking gold and returning nothing.
 
 ## Chest modes
 

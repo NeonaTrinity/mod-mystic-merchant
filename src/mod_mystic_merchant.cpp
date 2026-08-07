@@ -24,6 +24,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -36,6 +37,14 @@ namespace MysticMerchant
 constexpr uint32 COPPER_PER_GOLD = 10000;
 constexpr uint32 DEFAULT_NPC_ENTRY = 900201;
 constexpr uint32 GOSSIP_TEXT_ID = 1;
+
+// Consolation rewards used when a gray/white quality roll has no valid
+// equipment item for the selected category, slot, and level bracket.
+constexpr uint32 FALLBACK_GRAY_BUTTON = 43330;       // Broken U.L.O.S.E. Button
+constexpr uint32 FALLBACK_GRAY_BOAR_TUSK = 3171;    // Broken Boar Tusk
+constexpr uint32 FALLBACK_GRAY_WAND = 3769;         // Broken Wand
+constexpr uint32 FALLBACK_WHITE_ARMOR_SCRAPS = 17422;
+constexpr uint32 FALLBACK_WHITE_LEATHER_SCRAPS = 2934;
 
 // Item subclass values from ItemSubClass.dbc / SharedDefines.
 constexpr uint32 ARMOR_CLOTH = 1;
@@ -155,6 +164,8 @@ struct ConfigData
 
     bool gamblingEnabled = true;
     bool requirePlayerLevel = true;
+    uint32 grayChance = 0;
+    uint32 whiteChance = 0;
     uint32 greenChance = 80;
     uint32 blueChance = 18;
     uint32 epicChance = 2;
@@ -241,6 +252,8 @@ void LoadConfig()
 
     gConfig.gamblingEnabled = sConfigMgr->GetOption<bool>("MysticMerchant.Gambling.Enable", true);
     gConfig.requirePlayerLevel = sConfigMgr->GetOption<bool>("MysticMerchant.Gambling.RequirePlayerLevel", true);
+    gConfig.grayChance = sConfigMgr->GetOption<uint32>("MysticMerchant.Gambling.GrayChance", 0);
+    gConfig.whiteChance = sConfigMgr->GetOption<uint32>("MysticMerchant.Gambling.WhiteChance", 0);
     gConfig.greenChance = sConfigMgr->GetOption<uint32>("MysticMerchant.Gambling.GreenChance", 80);
     gConfig.blueChance = sConfigMgr->GetOption<uint32>("MysticMerchant.Gambling.BlueChance", 18);
     gConfig.epicChance = sConfigMgr->GetOption<uint32>("MysticMerchant.Gambling.EpicChance", 2);
@@ -252,10 +265,13 @@ void LoadConfig()
     gConfig.allowConjuredItems = sConfigMgr->GetOption<bool>("MysticMerchant.Pool.AllowConjuredItems", false);
     gConfig.logTransactions = sConfigMgr->GetOption<bool>("MysticMerchant.Logging.Enable", true);
 
-    uint32 qualityTotal = gConfig.greenChance + gConfig.blueChance + gConfig.epicChance;
-    if (qualityTotal != 100)
+    uint64 qualityTotal = static_cast<uint64>(gConfig.grayChance) + gConfig.whiteChance +
+        gConfig.greenChance + gConfig.blueChance + gConfig.epicChance;
+    if (qualityTotal == 0)
     {
-        LOG_WARN("module", "MysticMerchant: quality chances total {} instead of 100; using 80/18/2.", qualityTotal);
+        LOG_WARN("module", "MysticMerchant: all gambling quality weights are 0; using default weights 0/0/80/18/2.");
+        gConfig.grayChance = 0;
+        gConfig.whiteChance = 0;
         gConfig.greenChance = 80;
         gConfig.blueChance = 18;
         gConfig.epicChance = 2;
@@ -278,7 +294,7 @@ bool IsPoolTemplateAllowed(ItemTemplate const* item)
     if (item->Class != ITEM_CLASS_ARMOR && item->Class != ITEM_CLASS_WEAPON)
         return false;
 
-    if (item->Quality < ITEM_QUALITY_UNCOMMON || item->Quality > ITEM_QUALITY_EPIC)
+    if (item->Quality < ITEM_QUALITY_POOR || item->Quality > ITEM_QUALITY_EPIC)
         return false;
 
     if (item->RequiredLevel == 0 || item->InventoryType == INVTYPE_NON_EQUIP)
@@ -491,12 +507,57 @@ bool MatchesSelection(Candidate const& candidate, PlayerState const& state)
 
 uint32 RollQuality()
 {
-    uint32 roll = urand(1, 100);
-    if (roll <= gConfig.epicChance)
-        return ITEM_QUALITY_EPIC;
-    if (roll <= gConfig.epicChance + gConfig.blueChance)
+    // Treat configured values as relative weights. They do not need to total 100.
+    // Example: 10/10/80/18/2 rolls across a total weight of 120.
+    uint64 total = static_cast<uint64>(gConfig.grayChance) + gConfig.whiteChance +
+        gConfig.greenChance + gConfig.blueChance + gConfig.epicChance;
+
+    // LoadConfig converts an all-zero configuration back to defaults, but keep
+    // this guard so a future runtime change can never produce an invalid roll.
+    if (total == 0)
+        return ITEM_QUALITY_UNCOMMON;
+
+    // Config values are expected to be small weights/percent-like numbers.
+    // If an extreme configuration exceeds urand's uint32 range, scale all
+    // weights proportionally before rolling instead of disabling gambling.
+    uint32 gray = gConfig.grayChance;
+    uint32 white = gConfig.whiteChance;
+    uint32 green = gConfig.greenChance;
+    uint32 blue = gConfig.blueChance;
+    uint32 epic = gConfig.epicChance;
+
+    if (total > std::numeric_limits<uint32>::max())
+    {
+        double scale = static_cast<double>(std::numeric_limits<uint32>::max()) / static_cast<double>(total);
+        gray = static_cast<uint32>(gray * scale);
+        white = static_cast<uint32>(white * scale);
+        green = static_cast<uint32>(green * scale);
+        blue = static_cast<uint32>(blue * scale);
+        epic = static_cast<uint32>(epic * scale);
+        total = static_cast<uint64>(gray) + white + green + blue + epic;
+
+        if (total == 0)
+            return ITEM_QUALITY_UNCOMMON;
+    }
+
+    uint32 roll = urand(1, static_cast<uint32>(total));
+    uint32 cumulative = gray;
+    if (roll <= cumulative)
+        return ITEM_QUALITY_POOR;
+
+    cumulative += white;
+    if (roll <= cumulative)
+        return ITEM_QUALITY_NORMAL;
+
+    cumulative += green;
+    if (roll <= cumulative)
+        return ITEM_QUALITY_UNCOMMON;
+
+    cumulative += blue;
+    if (roll <= cumulative)
         return ITEM_QUALITY_RARE;
-    return ITEM_QUALITY_UNCOMMON;
+
+    return ITEM_QUALITY_EPIC;
 }
 
 std::vector<uint32> FindRewardEntries(PlayerState const* selection, uint32 bracketIndex, uint32 quality, bool anyEquipment)
@@ -524,6 +585,22 @@ std::vector<uint32> FindRewardEntries(PlayerState const* selection, uint32 brack
     return entries;
 }
 
+bool IsCandidateQualityReachable(uint32 quality)
+{
+    if (quality == ITEM_QUALITY_POOR)
+        return gConfig.grayChance > 0;
+    if (quality == ITEM_QUALITY_NORMAL)
+        return gConfig.whiteChance > 0;
+
+    // Green, blue, and epic intentionally fall back among one another when an
+    // exact quality pool is empty, so any normal-equipment quality is reachable
+    // whenever at least one of their weights is enabled.
+    if (quality >= ITEM_QUALITY_UNCOMMON && quality <= ITEM_QUALITY_EPIC)
+        return gConfig.greenChance > 0 || gConfig.blueChance > 0 || gConfig.epicChance > 0;
+
+    return false;
+}
+
 bool HasRewardForSelection(PlayerState const& selection, uint32 bracketIndex)
 {
     if (bracketIndex >= Brackets.size())
@@ -535,6 +612,8 @@ bool HasRewardForSelection(PlayerState const& selection, uint32 bracketIndex)
     std::lock_guard<std::mutex> lock(gPoolMutex);
     for (Candidate const& candidate : gCandidates)
     {
+        if (!IsCandidateQualityReachable(candidate.quality))
+            continue;
         if (candidate.requiredLevel < bracket.minLevel || candidate.requiredLevel > bracket.maxLevel)
             continue;
         if (candidate.itemLevel > maxItemLevel)
@@ -567,19 +646,66 @@ bool HasAnyRewardForSelection(Player const* player, PlayerState const& selection
     return false;
 }
 
+uint32 SelectConsolationReward(PlayerState const* selection, uint32 rolledQuality, bool anyEquipment)
+{
+    if (rolledQuality == ITEM_QUALITY_POOR)
+    {
+        if (anyEquipment || !selection)
+        {
+            std::array<uint32, 3> rewards = {FALLBACK_GRAY_BUTTON, FALLBACK_GRAY_BOAR_TUSK, FALLBACK_GRAY_WAND};
+            return rewards[urand(0, static_cast<uint32>(rewards.size() - 1))];
+        }
+
+        if (selection->kind == SelectionKind::Weapon)
+        {
+            std::array<uint32, 3> rewards = {FALLBACK_GRAY_WAND, FALLBACK_GRAY_BOAR_TUSK, FALLBACK_GRAY_BUTTON};
+            return rewards[urand(0, static_cast<uint32>(rewards.size() - 1))];
+        }
+
+        std::array<uint32, 2> rewards = {FALLBACK_GRAY_BUTTON, FALLBACK_GRAY_BOAR_TUSK};
+        return rewards[urand(0, static_cast<uint32>(rewards.size() - 1))];
+    }
+
+    if (rolledQuality == ITEM_QUALITY_NORMAL)
+    {
+        if (selection && selection->kind == SelectionKind::Armor && selection->subClass == ARMOR_LEATHER)
+            return FALLBACK_WHITE_LEATHER_SCRAPS;
+
+        if (anyEquipment || !selection || (selection && selection->kind == SelectionKind::Weapon))
+            return urand(0, 1) ? FALLBACK_WHITE_ARMOR_SCRAPS : FALLBACK_WHITE_LEATHER_SCRAPS;
+
+        return FALLBACK_WHITE_ARMOR_SCRAPS;
+    }
+
+    return 0;
+}
+
 uint32 SelectRewardEntry(PlayerState const* selection, uint32 bracketIndex, uint32 rolledQuality, bool anyEquipment)
 {
-    std::array<uint32, 3> fallback{};
+    // Always try the exact rolled quality first.
+    std::vector<uint32> entries = FindRewardEntries(selection, bracketIndex, rolledQuality, anyEquipment);
+    if (!entries.empty())
+        return entries[urand(0, static_cast<uint32>(entries.size() - 1))];
+
+    // Gray and white rolls are intentional losing outcomes. If no exact-slot
+    // equipment exists in the bracket, award the configured thematic junk
+    // fallback instead of rerolling upward into a better quality.
+    if (rolledQuality == ITEM_QUALITY_POOR || rolledQuality == ITEM_QUALITY_NORMAL)
+        return SelectConsolationReward(selection, rolledQuality, anyEquipment);
+
+    // Preserve the original behavior for green/blue/epic rolls: if the exact
+    // quality has no candidate, fall back among the normal equipment qualities.
+    std::array<uint32, 2> fallback{};
     if (rolledQuality == ITEM_QUALITY_EPIC)
-        fallback = {ITEM_QUALITY_EPIC, ITEM_QUALITY_RARE, ITEM_QUALITY_UNCOMMON};
+        fallback = {ITEM_QUALITY_RARE, ITEM_QUALITY_UNCOMMON};
     else if (rolledQuality == ITEM_QUALITY_RARE)
-        fallback = {ITEM_QUALITY_RARE, ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_EPIC};
+        fallback = {ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_EPIC};
     else
-        fallback = {ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_RARE, ITEM_QUALITY_EPIC};
+        fallback = {ITEM_QUALITY_RARE, ITEM_QUALITY_EPIC};
 
     for (uint32 quality : fallback)
     {
-        std::vector<uint32> entries = FindRewardEntries(selection, bracketIndex, quality, anyEquipment);
+        entries = FindRewardEntries(selection, bracketIndex, quality, anyEquipment);
         if (!entries.empty())
             return entries[urand(0, static_cast<uint32>(entries.size() - 1))];
     }
@@ -1244,9 +1370,9 @@ public:
     void OnStartup() override
     {
         LoadRewardPool();
-        LOG_INFO("module", "MysticMerchant: enabled={}, NPC={}, expansion={}, chest mode={}, quality={}/{}/{}.",
+        LOG_INFO("module", "MysticMerchant: enabled={}, NPC={}, expansion={}, chest mode={}, quality weights gray/white/green/blue/epic={}/{}/{}/{}/{}.",
             gConfig.enabled, gConfig.npcEntry, gConfig.expansion, gConfig.chestMode,
-            gConfig.greenChance, gConfig.blueChance, gConfig.epicChance);
+            gConfig.grayChance, gConfig.whiteChance, gConfig.greenChance, gConfig.blueChance, gConfig.epicChance);
     }
 };
 
