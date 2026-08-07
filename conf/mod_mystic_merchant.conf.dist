@@ -45,8 +45,13 @@ MysticMerchant.Gambling.Enable = 1
 # When enabled, players only see brackets whose minimum level they have reached.
 MysticMerchant.Gambling.RequirePlayerLevel = 1
 
-# Must total exactly 100. Invalid totals fall back to 80 / 18 / 2.
-MysticMerchant.Gambling.GreenChance = 80
+# Must total exactly 100 for chance to be the actual percent.
+# other wise it falls back to weighted rolls out of the total value set.
+# therefore any value is valid, but totaling 100 is desired.
+
+MysticMerchant.Gambling.GrayChance = 5
+MysticMerchant.Gambling.WhiteChance = 5
+MysticMerchant.Gambling.GreenChance = 70
 MysticMerchant.Gambling.BlueChance = 18
 MysticMerchant.Gambling.EpicChance = 2
 
