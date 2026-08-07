@@ -104,16 +104,32 @@ The expansion setting hides later choices and blocks replacement-container rewar
 ## Gambling prices
 
 ```text
-Level 10-19       5 gold
-Level 20-29      10 gold
-Level 30-39      20 gold
-Level 40-49      40 gold
-Level 50-59      50 gold
-Level 60        100 gold
-Level 61-69     150 gold
-Level 70        250 gold
-Level 71-79     300 gold
-Level 80        500 gold
+Level 10-19       2 gold
+Level 20-29      5 gold
+Level 30-39      10 gold
+Level 40-49      20 gold
+Level 50-59      30 gold
+Level 60        50 gold
+Level 61-69     75 gold
+Level 70        100 gold
+Level 71-79     150 gold
+Level 80        250 gold
+
+can be se tin the config here:
+
+# Prices are gold values.
+MysticMerchant.Gambling.Price.10_19 = 2
+MysticMerchant.Gambling.Price.20_29 = 5
+MysticMerchant.Gambling.Price.30_39 = 10
+MysticMerchant.Gambling.Price.40_49 = 20
+MysticMerchant.Gambling.Price.50_59 = 30
+MysticMerchant.Gambling.Price.60 = 50
+MysticMerchant.Gambling.Price.61_69 = 75
+MysticMerchant.Gambling.Price.70 = 100
+MysticMerchant.Gambling.Price.71_79 = 150
+MysticMerchant.Gambling.Price.80 = 250
+
+
 ```
 
 All prices and quality odds are configurable. With `MysticMerchant.Gambling.RequirePlayerLevel = 1`, a player only sees brackets whose minimum level they have reached.
@@ -121,11 +137,19 @@ All prices and quality odds are configurable. With `MysticMerchant.Gambling.Requ
 The default quality weights are:
 
 ```text
-Poor (gray):       0
-Common (white):    0
-Uncommon (green): 80
+Poor (gray):       10
+Common (white):    10
+Uncommon (green): 70
 Rare (blue):      18
 Epic (purple):     2
+
+can be set in the config here:
+
+MysticMerchant.Gambling.GrayChance = 5
+MysticMerchant.Gambling.WhiteChance = 5
+MysticMerchant.Gambling.GreenChance = 70
+MysticMerchant.Gambling.BlueChance = 18
+MysticMerchant.Gambling.EpicChance = 2
 ```
 
 The five values are relative weights and do not need to total 100. For example, `10 / 10 / 80 / 18 / 2` rolls proportionally across a total weight of 120. If all five values are 0, the module falls back to the default `0 / 0 / 80 / 18 / 2` weights and gambling remains enabled.
