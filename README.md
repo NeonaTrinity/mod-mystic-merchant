@@ -3,6 +3,9 @@
 Standalone AzerothCore 3.3.5a module providing a scripted Mystic Merchant NPC.
 - Module Created by: JTrinity https://github.com/NeonaTrinity/
 
+- Adds a merchant where players can spend gold to "gamble" for a loot item and Unlocks lock boxes. 
+  Either mode can be toggled on or off.
+
 ## Features
 
 - Creates NPC entry `900201`, spawnable with `.npc add 900201`.
