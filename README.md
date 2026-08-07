@@ -1,4 +1,4 @@
-# mod-mystic-merchant
+# Mystic Merchant
 
 Standalone AzerothCore 3.3.5a module providing a scripted Mystic Merchant NPC.
 - Module Created by: JTrinity https://github.com/NeonaTrinity/
